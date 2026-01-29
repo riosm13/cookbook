@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Cookbook</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --text: #c9d1d9;
+      --accent: #58a6ff;
+      --border: #30363d;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      padding: 40px 0 20px;
+    }
+    h1 {
+      color: var(--accent);
+      margin: 0;
+    }
+    #auth-section, #form-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 25px;
+      margin: 20px 0;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover { opacity: 0.9; }
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .recipe-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .recipe-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .recipe-info {
+      padding: 15px;
+    }
+    .recipe-info h3 {
+      color: var(--accent);
+      margin: 0 0 10px;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: #0d1117;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: inherit;
+    }
+    #logout { float: right; background: #ff5555; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>My Cookbook</h1>
+      <p>Your personal recipes</p>
+    </header>
+
+    <div id="auth-section">
+      <h2>Log In</h2>
+      <input id="email" type="email" placeholder="Your email" required>
+      <button onclick="signIn()">Log In (Magic Link)</button>
+      <p>Check your email for link (no password needed).</p>
+    </div>
+
+    <div id="form-section" style="display:none;">
+      <button id="logout" onclick="signOut()">Log Out</button>
+      <h2>Add New Recipe</h2>
+      <input id="title" type="text" placeholder="Title" required>
+      <textarea id="ingredients" rows="6" placeholder="Ingredients (one per line)" required></textarea>
+      <textarea id="instructions" rows="10" placeholder="Steps / Instructions" required></textarea>
+      <input id="photo" type="file" accept="image/*">
+      <button onclick="addRecipe()">Save Recipe</button>
+    </div>
+
+    <div id="recipes-list" class="recipe-grid"></div>
+  </div>
+
+  <script>
+    const supabase = Supabase.createClient('https://ugktxcywufofvhzpmirp.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVna3R4Y3l3dWZvZnZoenBtaXJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2OTE3ODksImV4cCI6MjA4NTI2Nzc4OX0.HJPme32ZmeFvrVqeShJaATqIS19ntfL8We0KQgsTCfg');
+
+    // Check if logged in
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        document.getElementById('auth-section').style.display = 'none';
+        document.getElementById('form-section').style.display = 'block';
+        loadRecipes();
+      } else {
+        document.getElementById('auth-section').style.display = 'block';
+        document.getElementById('form-section').style.display = 'none';
+      }
+    }
+
+    // Magic link login
+    async function signIn() {
+      const email = document.getElementById('email').value;
+      if (!email) return alert('Enter email');
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (error) alert(error.message);
+      else alert('Check your email for magic link!');
+    }
+
+    // Logout
+    async function signOut() {
+      await supabase.auth.signOut();
+      checkAuth();
+    }
+
+    // Load all recipes (public read)
+    async function loadRecipes() {
+      const { data, error } = await supabase.from('recipes').select('*').order('created_at', { ascending: false });
+      if (error) return console.error(error);
+      const list = document.getElementById('recipes-list');
+      list.innerHTML = '';
+      data.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'recipe-card';
+        card.innerHTML = `
+          ${r.photo_url ? `<img src="${r.photo_url}" alt="${r.title}">` : ''}
+          <div class="recipe-info">
+            <h3>${r.title}</h3>
+            <strong>Ingredients:</strong><pre>${r.ingredients}</pre>
+            <strong>Instructions:</strong><pre>${r.instructions}</pre>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    // Add recipe with photo
+    async function addRecipe() {
+      const title = document.getElementById('title').value;
+      const ingredients = document.getElementById('ingredients').value;
+      const instructions = document.getElementById('instructions').value;
+      const photoFile = document.getElementById('photo').files[0];
+
+      if (!title || !ingredients || !instructions) return alert('Fill all fields');
+
+      let photoUrl = null;
+      if (photoFile) {
+        const fileName = `${Date.now()}_${photoFile.name}`;
+        const { data, error } = await supabase.storage.from('recipe-photos').upload(fileName, photoFile);
+        if (error) return alert('Photo upload failed: ' + error.message);
+        photoUrl = supabase.storage.from('recipe-photos').getPublicUrl(fileName).data.publicUrl;
+      }
+
+      const { error } = await supabase.from('recipes').insert({
+        title, ingredients, instructions, photo_url: photoUrl
+      });
+      if (error) alert('Error: ' + error.message);
+      else {
+        alert('Recipe saved!');
+        document.getElementById('title').value = '';
+        document.getElementById('ingredients').value = '';
+        document.getElementById('instructions').value = '';
+        document.getElementById('photo').value = '';
+        loadRecipes();
+      }
+    }
+
+    // Listen for auth changes
+    supabase.auth.onAuthStateChange((event, session) => {
+      checkAuth();
+    });
+
+    // Initial check
+    checkAuth();
+  </script>
+</body>
+</html>

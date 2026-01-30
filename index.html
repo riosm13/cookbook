@@ -138,16 +138,19 @@
     }
 
     // Magic link login
-    async function signIn() {
-      const email = document.getElementById('email').value;
-      if (!email) return alert('Enter email');
-const { error } = await supabase.auth.signInWithOtp({
+async function signIn() {
+  const email = document.getElementById('email').value;
+  if (!email) {
+    alert('Enter email');
+    return;
+  }
+  const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: 'https://riosm13.github.io/cookbook/'  // Your exact site URL
+      emailRedirectTo: 'https://riosm13.github.io/cookbook/'
     }
   });
-  if (error) alert(error.message);
+  if (error) alert('Error: ' + error.message);
   else alert('Check your email for magic link! (may take 10-60 sec, check spam)');
 }
 

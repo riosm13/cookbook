@@ -122,7 +122,7 @@
   </div>
 
   <script>
-    const supabase = supabase = createClient('https://ugktxcywufofvhzpmirp.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVna3R4Y3l3dWZvZnZoenBtaXJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2OTE3ODksImV4cCI6MjA4NTI2Nzc4OX0.HJPme32ZmeFvrVqeShJaATqIS19ntfL8We0KQgsTCfg');
+    const supabase = createClient('https://ugktxcywufofvhzpmirp.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVna3R4Y3l3dWZvZnZoenBtaXJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2OTE3ODksImV4cCI6MjA4NTI2Nzc4OX0.HJPme32ZmeFvrVqeShJaATqIS19ntfL8We0KQgsTCfg');
 
     // Check if logged in
     async function checkAuth() {
@@ -141,10 +141,15 @@
     async function signIn() {
       const email = document.getElementById('email').value;
       if (!email) return alert('Enter email');
-      const { error } = await supabase.auth.signInWithOtp({ email });
-      if (error) alert(error.message);
-      else alert('Check your email for magic link!');
+const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: 'https://riosm13.github.io/cookbook/'  // Your exact site URL
     }
+  });
+  if (error) alert(error.message);
+  else alert('Check your email for magic link! (may take 10-60 sec, check spam)');
+}
 
     // Logout
     async function signOut() {
